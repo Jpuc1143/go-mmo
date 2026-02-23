@@ -17,3 +17,9 @@ impl Coord {
         self.y
     }
 }
+
+impl From<Coord> for (i64, i64) {
+    fn from(value: Coord) -> Self {
+        (value.x, value.y)
+    }
+}

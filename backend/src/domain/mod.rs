@@ -1,6 +1,7 @@
-mod game_service;
-mod invalid_move_error;
+pub mod game_service;
+pub mod invalid_move_error;
+pub mod move_changes;
 
-mod color;
+pub mod color;
 pub mod coord;
 pub mod group;
