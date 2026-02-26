@@ -1,6 +1,9 @@
 use diesel::prelude::*;
 
-use crate::{domain::group::GroupId, repository::group_contacts_mapper::GroupContactsMapper};
+use crate::{
+    domain::{group::GroupId, grouped_stones::GroupedStones},
+    repository::{group_contacts_mapper::GroupContactsMapper, stone_mapper::StoneMapper},
+};
 
 use super::super::domain::{color::Color, group::Group};
 
@@ -18,6 +21,14 @@ impl GroupMapper {
         self.id
     }
 
+    pub fn color(&self) -> Color {
+        if self.is_black {
+            Color::Black
+        } else {
+            Color::White
+        }
+    }
+
     pub fn into_group(self, contacts: Vec<GroupContactsMapper>) -> Group {
         let group_id = GroupId::new(self.id);
         let adjacents = contacts
@@ -27,13 +38,17 @@ impl GroupMapper {
 
         Group::new(
             group_id,
-            if self.is_black {
-                Color::Black
-            } else {
-                Color::White
-            },
+            self.color(),
             self.max_liberties.try_into().unwrap(),
             adjacents,
+        )
+    }
+
+    pub fn into_grouped_stones(self, stones: Vec<&StoneMapper>) -> GroupedStones {
+        GroupedStones::new(
+            GroupId::new(self.id),
+            self.color(),
+            stones.into_iter().map(|s| s.coord()).collect(),
         )
     }
 }

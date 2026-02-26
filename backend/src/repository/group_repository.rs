@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{collections::HashSet, fmt::Debug};
 
 use diesel::dsl::exists;
 use diesel::prelude::*;
@@ -8,10 +8,12 @@ use super::super::domain::{
     group::{Group, GroupId},
 };
 
-use crate::repository::group_contacts_mapper::GroupContactsMapper;
 use crate::repository::group_mapper::{GroupInsertMapper, GroupMapper};
 use crate::repository::stone_mapper::StoneMapper;
 use crate::schema::{group_contacts, groups, stones};
+use crate::{
+    domain::grouped_stones::GroupedStones, repository::group_contacts_mapper::GroupContactsMapper,
+};
 
 pub struct GroupRepository {
     connection: SqliteConnection,
@@ -77,11 +79,11 @@ impl GroupRepository {
             .unwrap();
     }
 
-    pub fn upsert_group(&mut self, group: Group) -> GroupId {
+    pub fn upsert_group(&mut self, group: &Group) -> GroupId {
         match group.id() {
             None => {
                 let id = diesel::insert_into(groups::table)
-                    .values::<GroupInsertMapper>(group.into())
+                    .values::<GroupInsertMapper>(group.clone().into())
                     .get_result::<GroupMapper>(&mut self.connection)
                     .unwrap()
                     .id();
@@ -90,7 +92,7 @@ impl GroupRepository {
 
             Some(id) => {
                 diesel::update(groups::table)
-                    .set::<GroupMapper>(group.into())
+                    .set::<GroupMapper>(group.clone().into())
                     .execute(&mut self.connection)
                     .unwrap();
                 id
@@ -110,6 +112,31 @@ impl GroupRepository {
             .values(StoneMapper::new(coord, group_id))
             .execute(&mut self.connection)
             .unwrap();
+    }
+
+    pub fn get_groups_with_stones(&mut self) -> Vec<GroupedStones> {
+        let stones: Vec<StoneMapper> = stones::table.get_results(&mut self.connection).unwrap();
+
+        let stones_ids: HashSet<_> = stones
+            .iter()
+            .map(|stone: &StoneMapper| stone.group_id())
+            .collect();
+
+        let groups: Vec<GroupMapper> = groups::table
+            .filter(groups::id.eq_any(stones_ids))
+            .get_results(&mut self.connection)
+            .unwrap();
+
+        groups
+            .into_iter()
+            .map(|group| {
+                let stones = stones
+                    .iter()
+                    .filter(|s| s.group_id() == group.id())
+                    .collect();
+                group.into_grouped_stones(stones)
+            })
+            .collect()
     }
 }
 

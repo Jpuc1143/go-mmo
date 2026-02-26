@@ -3,9 +3,11 @@ use std::{
     hash::Hash,
 };
 
+use serde::{Deserialize, Serialize};
+
 use super::color::Color;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct GroupId(i32);
 
 impl GroupId {
@@ -81,7 +83,7 @@ impl Group {
     }
 
     pub fn liberties(&self) -> u32 {
-        self.max_liberties - self.adjacent_groups.values().fold(0, |a, b| a + b)
+        self.max_liberties - self.adjacent_groups.values().sum::<u32>()
     }
 
     pub fn in_atari(&self) -> bool {

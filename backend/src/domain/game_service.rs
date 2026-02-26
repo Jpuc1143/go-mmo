@@ -1,4 +1,4 @@
-use crate::domain::move_changes::MoveChanges;
+use crate::domain::stone_placed_changes::StonePlacedChanges;
 
 use super::coord::Coord;
 
@@ -23,30 +23,30 @@ impl GameService {
         &mut self,
         coord: Coord,
         color: Color,
-    ) -> Result<MoveChanges, InvalidMoveError> {
+    ) -> Result<StonePlacedChanges, InvalidMoveError> {
         if self.group_repository.stone_is_in_group(coord) {
             return Err(InvalidMoveError);
         }
 
         let neighbors = self.group_repository.neighboring_groups(coord);
         let mut assigned_group = Group::merge_or_create(color, neighbors.iter());
-        let mut merged_groups = Vec::new();
+        let mut captured_groups_ids = Vec::new();
+        let mut merged_groups_ids = Vec::new();
 
         for group in neighbors.into_iter() {
             if group.id() == assigned_group.id() {
-                merged_groups.push(group.id().unwrap());
+                merged_groups_ids.push(group.id().unwrap());
                 continue;
             } else if group.color() == color {
-                merged_groups.push(group.id().unwrap());
+                merged_groups_ids.push(group.id().unwrap());
                 self.group_repository
                     .merge_group(assigned_group.id().unwrap(), group);
+            } else if group.in_atari() {
+                captured_groups_ids.push(group.id().unwrap());
+                assigned_group.remove_adjacent_group(group.id().unwrap());
+                self.group_repository.delete_group(group);
             } else {
-                if group.in_atari() {
-                    assigned_group.remove_adjacent_group(group.id().unwrap());
-                    self.group_repository.delete_group(group);
-                } else {
-                    assigned_group.add_adjacent_group(group.id().unwrap());
-                }
+                assigned_group.add_adjacent_group(group.id().unwrap());
             }
         }
 
@@ -54,13 +54,14 @@ impl GameService {
             return Err(InvalidMoveError);
         }
 
-        let id = self.group_repository.upsert_group(assigned_group);
+        let id = self.group_repository.upsert_group(&assigned_group);
         self.group_repository.add_stone_to_group(id, coord);
 
-        Ok(MoveChanges {
+        Ok(StonePlacedChanges {
             coord,
-            assigned_group: id,
-            merged_groups,
+            assigned_group,
+            captured_groups_ids,
+            merged_groups_ids,
         })
     }
 }

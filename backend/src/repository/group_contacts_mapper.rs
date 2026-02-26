@@ -19,13 +19,13 @@ impl GroupContactsMapper {
 
     pub fn other_group_of(&self, id: GroupId) -> GroupId {
         if id.into_primitive() == self.low_group_id {
-            return GroupId::new(self.high_group_id);
+            GroupId::new(self.high_group_id)
         } else {
-            return GroupId::new(self.low_group_id);
+            GroupId::new(self.low_group_id)
         }
     }
 
     pub fn belongs_to(&self, group_id: i32) -> bool {
-        return group_id == self.low_group_id || group_id == self.high_group_id;
+        group_id == self.low_group_id || group_id == self.high_group_id
     }
 }
