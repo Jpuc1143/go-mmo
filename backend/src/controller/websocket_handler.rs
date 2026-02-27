@@ -7,7 +7,7 @@ use axum::{
 };
 use futures_util::stream::StreamExt;
 
-use crate::controller::app_state::AppState;
+use crate::controller::{app_state::AppState, game_client_command::GameClientCommand};
 
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
@@ -24,6 +24,10 @@ async fn handle_websocket(socket: WebSocket, app_state: AppState) {
     let (message_sender, mut command_receiver) = socket.split();
 
     let id = client_manager.register_client(message_sender).await;
+
+    let cmd = GameClientCommand::RequestConfiguration;
+    command_sender.send((id, cmd)).await.unwrap();
+
     while let Some(cmd) = command_receiver.next().await {
         let cmd = cmd
             .expect("Error reading client command")

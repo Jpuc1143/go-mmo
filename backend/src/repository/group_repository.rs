@@ -37,7 +37,7 @@ impl GroupRepository {
         let groups_ids: Vec<i32> = stones::table
             .select(stones::group_id)
             .or_filter(stones::x.eq(x).and(stones::y.eq_any([y - 1, y + 1].iter())))
-            .or_filter(stones::y.eq(y).and(stones::x.eq_any([y - 1, y + 1].iter())))
+            .or_filter(stones::y.eq(y).and(stones::x.eq_any([x - 1, x + 1].iter())))
             .get_results(&mut self.connection)
             .unwrap();
 
@@ -52,21 +52,26 @@ impl GroupRepository {
             .get_results(&mut self.connection)
             .unwrap();
 
-        let mut groups = groups.into_iter().map(|g_mapper| {
-            let contacts = contacts
-                .iter()
-                .filter(|c| c.belongs_to(g_mapper.id()))
-                .cloned()
-                .collect();
-            g_mapper.into_group(contacts)
-        });
+        let groups: Vec<_> = groups
+            .into_iter()
+            .map(|g_mapper| {
+                let contacts = contacts
+                    .iter()
+                    .filter(|c| c.belongs_to(g_mapper.id()))
+                    .cloned()
+                    .collect();
+                g_mapper.into_group(contacts)
+            })
+            .collect();
 
         groups_ids
             .into_iter()
             .map(|id| {
                 groups
+                    .iter()
                     .find(|g| g.id().unwrap().into_primitive() == id)
                     .unwrap()
+                    .clone()
             })
             .collect()
     }
@@ -80,7 +85,7 @@ impl GroupRepository {
     }
 
     pub fn upsert_group(&mut self, group: &Group) -> GroupId {
-        match group.id() {
+        let id = match group.id() {
             None => {
                 let id = diesel::insert_into(groups::table)
                     .values::<GroupInsertMapper>(group.clone().into())
@@ -92,12 +97,32 @@ impl GroupRepository {
 
             Some(id) => {
                 diesel::update(groups::table)
+                    .filter(groups::id.eq(id.into_primitive()))
                     .set::<GroupMapper>(group.clone().into())
                     .execute(&mut self.connection)
                     .unwrap();
                 id
             }
-        }
+        };
+
+        diesel::delete(group_contacts::table)
+            .filter(group_contacts::low_group_id.eq(id.into_primitive()))
+            .or_filter(group_contacts::high_group_id.eq(id.into_primitive()))
+            .execute(&mut self.connection)
+            .unwrap();
+
+        diesel::insert_into(group_contacts::table)
+            .values(
+                group
+                    .adjacent_groups()
+                    .iter()
+                    .map(|(other_id, count)| GroupContactsMapper::new(id, *other_id, *count))
+                    .collect::<Vec<_>>(),
+            )
+            .execute(&mut self.connection)
+            .unwrap();
+
+        id
     }
 
     pub fn delete_group(&mut self, group: Group) {

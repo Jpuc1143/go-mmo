@@ -43,6 +43,10 @@ impl Group {
         }
     }
 
+    pub fn set_id(&mut self, id: GroupId) {
+        self.id = Some(id);
+    }
+
     pub fn merge_or_create<'a>(color: Color, groups: impl Iterator<Item = &'a Group>) -> Group {
         let groups: Vec<_> = groups.filter(|g| g.color() == color).collect();
         let assigned_group_id = groups.first().map(|g| g.id().unwrap());
@@ -101,5 +105,9 @@ impl Group {
 
     pub fn remove_adjacent_group(&mut self, id: GroupId) {
         self.adjacent_groups.remove(&id);
+    }
+
+    pub fn adjacent_groups(&self) -> &HashMap<GroupId, u32> {
+        &self.adjacent_groups
     }
 }

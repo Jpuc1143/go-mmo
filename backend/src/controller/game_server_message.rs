@@ -1,13 +1,17 @@
 use serde::Serialize;
 
 use crate::{
-    controller::dto::GroupDto,
+    controller::dto::{GroupDto, GroupedStonesDto},
     domain::{coord::Coord, group::GroupId, stone_placed_changes::StonePlacedChanges},
 };
 
 #[derive(Debug, Serialize)]
+#[serde(tag = "type")]
 pub enum GameServerMessage {
-    BoardData,
+    BoardData {
+        grouped_stones: Vec<GroupedStonesDto>,
+    },
+
     StonePlaced {
         coord: Coord,
         assigned_group: GroupDto,

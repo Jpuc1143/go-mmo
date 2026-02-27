@@ -51,12 +51,19 @@ impl ClientManager {
 
     pub async fn send_message(&self, id: ClientId, msg: GameServerMessage) {
         if let Some(sender) = self.message_senders.write().await.get_mut(&id) {
-            let msg = Self::serialize_message(msg);
+            let msg = Self::serialize_message(&msg);
             sender.send(msg).await.expect("Error sending message");
         }
     }
 
-    fn serialize_message(msg: GameServerMessage) -> Message {
+    pub async fn broadcast_message(&self, msg: GameServerMessage) {
+        for sender in self.message_senders.write().await.values_mut() {
+            let msg = Self::serialize_message(&msg);
+            sender.send(msg).await.ok();
+        }
+    }
+
+    fn serialize_message(msg: &GameServerMessage) -> Message {
         let msg = serde_json::to_string(&msg).expect("Error serializing server message");
         Message::text(msg)
     }

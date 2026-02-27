@@ -17,7 +17,7 @@ use go_mmo::{
 async fn main() {
     // TODO env vars
 
-    let database_url = ":memory:";
+    let database_url = "database.db";
     let connection = SqliteConnection::establish(database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 

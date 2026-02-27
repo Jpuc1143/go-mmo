@@ -1,3 +1,4 @@
+use crate::domain::grouped_stones::GroupedStones;
 use crate::domain::stone_placed_changes::StonePlacedChanges;
 
 use super::coord::Coord;
@@ -56,6 +57,7 @@ impl GameService {
 
         let id = self.group_repository.upsert_group(&assigned_group);
         self.group_repository.add_stone_to_group(id, coord);
+        assigned_group.set_id(id);
 
         Ok(StonePlacedChanges {
             coord,
@@ -63,5 +65,9 @@ impl GameService {
             captured_groups_ids,
             merged_groups_ids,
         })
+    }
+
+    pub fn get_board(&mut self) -> Vec<GroupedStones> {
+        self.group_repository.get_groups_with_stones()
     }
 }

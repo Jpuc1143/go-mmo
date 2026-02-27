@@ -7,7 +7,7 @@ use crate::{
 
 use super::super::domain::{color::Color, group::Group};
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = crate::schema::groups)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct GroupMapper {
