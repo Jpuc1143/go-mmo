@@ -5,7 +5,11 @@ import GameRenderer from "./View/GameRenderer.ts";
 import GameGateway from "./Gateway/GameGateway";
 import { Game } from "./Domain/Game.ts";
 
-const gateway = new GameGateway(new URL("ws://localhost:3000/ws"));
+const url = new URL(
+  "ws",
+  import.meta.env.BACKEND_URL || "http://localhost:3000",
+);
+const gateway = new GameGateway(url);
 const game = new Game(gateway);
 const renderer = new GameRenderer(game);
 

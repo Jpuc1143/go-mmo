@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use diesel::prelude::*;
 
 use axum::{Router, routing::get};
 
+use dotenvy::dotenv;
 use go_mmo::{
     controller::{
         app_state::AppState, client_manager::ClientManager, game_controller::GameController,
@@ -15,10 +16,10 @@ use go_mmo::{
 
 #[tokio::main]
 async fn main() {
-    // TODO env vars
+    dotenv().ok();
 
-    let database_url = "database.db";
-    let connection = SqliteConnection::establish(database_url)
+    let database_url = env::var("DATABASE_URL").unwrap_or("database.db".to_string());
+    let connection = SqliteConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
     let group_repository = GroupRepository::new(connection);
@@ -38,6 +39,10 @@ async fn main() {
         .route("/ws", get(websocket_handler))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let host = env::var("HOST").unwrap_or("localhost".into());
+    let port = env::var("PORT").unwrap_or("3000".into());
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
 }
