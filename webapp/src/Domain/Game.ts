@@ -1,11 +1,12 @@
 import {
   GameServerMessage,
+  InvalidMoveMesage,
   StonePlacedMessage,
 } from "../Gateway/GameServerMessage";
 import GameGateway from "../Gateway/GameGateway";
 import GameRenderer from "../View/GameRenderer";
 import { Color } from "./Color";
-import { Coord } from "./Coord";
+import { Coord, CoordHash } from "./Coord";
 import { GroupId, Group } from "./Group";
 import { PlaceStoneCommand } from "../Gateway/GameClientCommand";
 import { BoardDataMessage } from "../Gateway/GameServerMessage";
@@ -16,6 +17,8 @@ export class Game {
   readonly gateway: GameGateway;
 
   readonly groups: Map<GroupId, Group> = new Map();
+
+  readonly pendingMoves: Set<CoordHash> = new Set();
 
   public constructor(gateway: GameGateway) {
     this.gateway = gateway;
@@ -41,6 +44,10 @@ export class Game {
         this.receiveBoardData(message);
         break;
 
+      case "InvalidMove":
+        this.receiveRollback(message);
+        break;
+
       default:
         console.log("Unknown server message type");
     }
@@ -58,6 +65,7 @@ export class Game {
 
     const group = this.groups.get(message.assigned_group.id)!;
     group.stones.push(coord);
+    this.pendingMoves.delete(coord.hash());
     this.renderer.placeStone(coord, group.color);
 
     for (const id of message.captured_groups_ids) {
@@ -104,8 +112,19 @@ export class Game {
     }
   }
 
+  receiveRollback(message: InvalidMoveMesage) {
+    const coord = new Coord(message.coord.x, message.coord.y);
+    if (this.pendingMoves.has(coord.hash())) {
+      this.pendingMoves.delete(coord.hash());
+      this.renderer.removeStone(coord);
+      console.log("Rolling back", coord);
+    }
+  }
+
   public placeStone(coord: Coord) {
     const cmd = new PlaceStoneCommand(coord, this.playerColor);
+    this.pendingMoves.add(coord.hash());
+    this.renderer.placeStone(coord, this.playerColor);
     this.gateway.sendCommand(cmd);
   }
 }

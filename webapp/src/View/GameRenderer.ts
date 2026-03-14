@@ -60,7 +60,9 @@ export default class GameRenderer {
       const coord = new Coord(x, y);
 
       // TODO only place if mouse is inside stone area.
-      this.game.placeStone(coord);
+      if (!this.stones.has(coord.hash())) {
+        this.game.placeStone(coord);
+      }
     });
 
     this.viewport.on("drag-end", () => {
@@ -97,6 +99,7 @@ export default class GameRenderer {
   public removeStone(coord: Coord) {
     if (this.stones.has(coord.hash())) {
       this.stones.get(coord.hash())!.destroy();
+      this.stones.delete(coord.hash());
     }
   }
 }

@@ -18,6 +18,10 @@ pub enum GameServerMessage {
         captured_groups_ids: Vec<GroupId>,
         merged_groups_ids: Vec<GroupId>,
     },
+
+    InvalidMove {
+        coord: Coord,
+    }
 }
 
 impl From<StonePlacedChanges> for GameServerMessage {

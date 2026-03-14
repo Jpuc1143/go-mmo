@@ -40,7 +40,7 @@ impl GameController {
             match msg {
                 GameClientCommand::RequestConfiguration => self.get_board(id).await,
                 GameClientCommand::PlaceStone { coord, color } => {
-                    self.place_stone(coord, color).await
+                    self.place_stone(id, coord, color).await
                 }
             }
         }
@@ -60,13 +60,15 @@ impl GameController {
         self.client_manager.send_message(id, msg).await;
     }
 
-    pub async fn place_stone(&mut self, coord: Coord, color: Color) {
+    pub async fn place_stone(&mut self, id: ClientId, coord: Coord, color: Color) {
         // TODO spawn blocking
         if let Ok(move_changes) = self.game_service.place_stone(coord, color) {
             let msg = move_changes.into();
             self.client_manager.broadcast_message(msg).await;
         } else {
             println!("Invalid move {:?} {:?}", coord, color);
+            let msg = GameServerMessage::InvalidMove { coord };
+            self.client_manager.send_message(id, msg).await;
         };
     }
 }

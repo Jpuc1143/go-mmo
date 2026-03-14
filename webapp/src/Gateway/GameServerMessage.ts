@@ -3,7 +3,10 @@ import { GroupId } from "../Domain/Group";
 import { GroupDto } from "./GroupDto";
 import { GroupedStonesDto } from "./GroupedStonesDto";
 
-export type GameServerMessage = BoardDataMessage | StonePlacedMessage;
+export type GameServerMessage =
+  | BoardDataMessage
+  | StonePlacedMessage
+  | InvalidMoveMesage;
 
 export interface BoardDataMessage {
   type: "BoardData";
@@ -16,4 +19,9 @@ export interface StonePlacedMessage {
   assigned_group: GroupDto;
   captured_groups_ids: Array<GroupId>;
   merged_groups_ids: Array<GroupId>;
+}
+
+export interface InvalidMoveMesage {
+  type: "InvalidMove";
+  coord: Coord;
 }

@@ -40,5 +40,5 @@ fn place_l_shape_group() {
         .place_stone(Coord::new(0, 0), Color::Black)
         .unwrap();
 
-    assert_eq!(changes.merged_groups.len(), 2)
+    assert_eq!(changes.merged_groups_ids.len(), 2)
 }
