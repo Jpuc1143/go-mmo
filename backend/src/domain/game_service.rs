@@ -52,6 +52,7 @@ impl GameService {
         }
 
         if assigned_group.is_dead() {
+            println!("{assigned_group:?}");
             return Err(InvalidMoveError);
         }
 

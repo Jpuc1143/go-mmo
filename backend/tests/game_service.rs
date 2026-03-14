@@ -1,4 +1,4 @@
-use diesel::prelude::*;
+use diesel::{connection::SimpleConnection, prelude::*};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use go_mmo::{
     domain::{color::Color, coord::Coord, game_service::GameService},
@@ -11,6 +11,10 @@ fn get_game_service() -> GameService {
     let database_url = ":memory:";
     let mut connection = SqliteConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+
+    connection
+        .batch_execute("PRAGMA foreign_keys = ON;")
+        .expect("Error enabling foreign keys");
     connection.run_pending_migrations(MIGRATIONS).unwrap();
 
     let repo = GroupRepository::new(connection);

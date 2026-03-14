@@ -21,7 +21,7 @@ pub enum GameServerMessage {
 
     InvalidMove {
         coord: Coord,
-    }
+    },
 }
 
 impl From<StonePlacedChanges> for GameServerMessage {

@@ -1,6 +1,6 @@
 use std::{env, sync::Arc};
 
-use diesel::prelude::*;
+use diesel::{connection::SimpleConnection, prelude::*};
 
 use axum::{Router, routing::get};
 
@@ -19,8 +19,11 @@ async fn main() {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").unwrap_or("database.db".to_string());
-    let connection = SqliteConnection::establish(&database_url)
+    let mut connection = SqliteConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+    connection
+        .batch_execute("PRAGMA foreign_keys = ON;")
+        .expect("Error enabling foreign keys");
 
     let group_repository = GroupRepository::new(connection);
     let game_service = GameService::new(group_repository);
